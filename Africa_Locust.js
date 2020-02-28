@@ -43,14 +43,14 @@ var JuPingPer = ee.ImageCollection.fromImages(
 var JuPingLastyear = ee.ImageCollection.fromImages(
   months.map(function (m) {
       var NDVI = col.filterDate('2019-12-01',now).filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
-      var hisNDVI = col.filterDate('2018-12-01','2019-02-24').filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
+      var hisNDVI = col.filterDate('2018-12-01','2019-02-28').filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
       return NDVI.subtract(hisNDVI).set('month', m).updateMask(mask);
   }));
 
 var JuPingPerLaster = ee.ImageCollection.fromImages(
   months.map(function (m) {
       var NDVI = col.filterDate('2019-12-01',now).filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
-      var hisNDVI = col.filterDate('2018-12-01','2019-02-24').filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
+      var hisNDVI = col.filterDate('2018-12-01','2019-02-28').filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
       return NDVI.subtract(hisNDVI).divide(hisNDVI).set('month', m).updateMask(mask);
   }));
 

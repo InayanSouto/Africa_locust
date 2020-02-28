@@ -1,49 +1,45 @@
-var today = ee.Date(Date.now());
-var NDVICollection = ee.ImageCollection('MODIS/006/MOD13A2').select('NDVI').filterDate("2010-01-01", today);
+// study area 
+// var regions = ee.FeatureCollection([
+//   ee.Feature(    // study area.
+//     ee.Geometry.Rectangle(20, -5, 75, 35), {label: 'study Area'})
+// ]);
+var regions = ee.FeatureCollection("users/wufvckshuo/Africa_Locust/studyarea");
+
+var now = ee.Date(Date.now());
+var NDVICollection=ee.ImageCollection('MODIS/006/MOD13Q1')
+  .filterDate('2010-01-01',now)
+  .filterBounds(regions)
+  .select('NDVI'); 
 
 var col = NDVICollection.map(function(img){
   return img.multiply(0.0001)
   .copyProperties(img,['system:time_start','system:time_end']);
-});
+  });
 
-// study area
-var regions = ee.FeatureCollection([
-  ee.Feature(
-    ee.Geometry.Rectangle(20, -5, 75, 35), {label: 'study Area'})
-]);
-
-// Define the regional bounds of animation frames.
-var region = regions.geometry().bounds();
-
-// Add day-of-year (DOY) property to each image.
-col = col.map(function(img) {
-  var doy = ee.Date(img.get('system:time_start')).getRelative('day', 'year');
-  return img.set('doy', doy);
-});
-
-// Get a collection of distinct images by 'doy'.
-var distinctDOY = col.filterDate('2019-12-01', today);
-
-var doys = ee.List(distinctDOY.aggregate_array('doy'));
-
-// group by doy
-var JuPingLastyear = ee.ImageCollection.fromImages(
-  doys.map(function(doy){
-  var filterDoy = col.filterDate('2018-12-01','2019-02-22').filterMetadata('doy', 'equals', doy)
-  .reduce(ee.Reducer.mean()).set('doy', doy);
-  var newDoy = distinctDOY.filterMetadata('doy', 'equals', doy)
-  .reduce(ee.Reducer.mean()).set('doy', doy);
-  return newDoy.subtract(filterDoy).set('doy', doy);
+var months = ee.List([12,1,2]);
+var byMonth = ee.ImageCollection.fromImages(
+  months.map(function (m) {
+    return col.filter(ee.Filter.calendarRange(m, m, 'month'))
+                .select('NDVI').mean()
+                .set('month', m);
 }));
+
+var meanNDVI = byMonth.reduce(ee.Reducer.mean());
+var mask = meanNDVI.gt(0.1);
+
+var JuPingLastyear = ee.ImageCollection.fromImages(
+  months.map(function (m) {
+      var NDVI = col.filterDate('2019-12-01',now).filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
+      var hisNDVI = col.filterDate('2018-12-01','2019-02-28').filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
+      return NDVI.subtract(hisNDVI).set('month', m).updateMask(mask);
+  }));
 
 var JuPingPerLaster = ee.ImageCollection.fromImages(
-  doys.map(function(doy){
-  var filterDoy = col.filterDate('2018-12-01','2019-02-22').filterMetadata('doy', 'equals', doy)
-  .reduce(ee.Reducer.mean()).set('doy', doy);
-  var newDoy = distinctDOY.filterMetadata('doy', 'equals', doy)
-  .reduce(ee.Reducer.mean()).set('doy', doy);
-  return newDoy.subtract(filterDoy).divide(filterDoy).set('doy', doy);
-}));
+  months.map(function (m) {
+      var NDVI = col.filterDate('2019-12-01',now).filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
+      var hisNDVI = col.filterDate('2018-12-01','2019-02-28').filter(ee.Filter.calendarRange(m, m, 'month')).mean().set('month', m);
+      return NDVI.subtract(hisNDVI).divide(hisNDVI).set('month', m).updateMask(mask);
+  }));
 
 function exportImageCollection(imgCol,str) {
   var indexList = imgCol.reduceColumns(ee.Reducer.toList(), ["system:index"])
@@ -55,10 +51,10 @@ function exportImageCollection(imgCol,str) {
       var desc_name = image.get('system:index').getInfo();
       print(desc_name);
         Export.image.toDrive({
-        image: image.clip(region),
+        image: image.clip(regions),
         description: str + desc_name,
         folder:'Africa_Locust',
-        region: region,
+        region: regions.geometry(),
         scale: 1000,
         crs: "EPSG:4326",
         maxPixels: 1e13
@@ -78,33 +74,8 @@ var visParams = {
   ],
 };
 
-Map.centerObject(region,2);
+Map.centerObject(regions,2);
 Map.addLayer(JuPingLastyear,visParams,'JuPingLastyear')
-// Create RGB visualization images for use as animation frames.
-var rgbVis = JuPingLastyear.map(function(img) {
-  return img.visualize(visParams).clip(regions);
-});
-
-var doyVis = JuPingPerLaster.map(function(img) {
-  return img.visualize(visParams).clip(regions);
-});
-
-// Define GIF visualization arguments.
-var gifParams = {
-  'region': region,
-  'dimensions': 250,
-  'crs': 'EPSG:4326',
-  'framesPerSecond': 1,
-  'format': 'gif'
-};
-
-// Print the GIF URL to the console.
-print(rgbVis.getVideoThumbURL(gifParams));
-
-// Render the GIF animation in the console.
-print(ui.Thumbnail(rgbVis, gifParams));
-
-print(ui.Thumbnail(doyVis, gifParams));
 
 exportImageCollection(JuPingLastyear,'JuPingLastyear_');
 exportImageCollection(JuPingPerLaster,'JuPingPerLastyear_');

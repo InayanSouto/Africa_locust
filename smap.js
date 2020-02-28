@@ -1,7 +1,7 @@
 // study area 
 var regions = ee.FeatureCollection([
     ee.Feature(    // study area.
-      ee.Geometry.Rectangle(20, -5, 75, 35), {label: 'study Area'})
+      ee.Geometry.Rectangle(60, 18, 75, 35), {label: 'study Area'})
   ]);
 // imgCol
 var now = ee.Date(Date.now());

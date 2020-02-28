@@ -50,7 +50,7 @@ var visParams = {
 };
 
 Map.centerObject(region);
-Map.addLayer(comp,visParam,'COMP');
+Map.addLayer(comp,visParams,'COMP');
 // Create RGB visualization images for use as animation frames.
 var rgbVis = comp.map(function(img) {
   return img.visualize(visParams).clip(mask);
