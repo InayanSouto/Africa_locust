@@ -36,7 +36,11 @@ var ssmRatio_05 = ssm_18_05.subtract(meanMaySsm).divide(meanMaySsm).set('name','
 var ssmRatio_10 = ssm_18_10.subtract(meanOctSsm).divide(meanOctSsm).set('name','ssmRatio_10');
 var ssmRatio_12 = ssm_19_12.subtract(meanDecSsm).divide(meanDecSsm).set('name','ssmRatio_12');
 
-var exportCol = ee.ImageCollection([meanMaySsm,meanOctSsm,meanDecSsm,juping_05,juping_10,juping_12,ssmRatio_05,ssmRatio_10,ssmRatio_12]);
+var exportCol = ee.ImageCollection([
+  ssm_18_05,ssm_18_10,ssm_19_12,
+  meanMaySsm,meanOctSsm,meanDecSsm,
+  juping_05,juping_10,juping_12,
+  ssmRatio_05,ssmRatio_10,ssmRatio_12]);
 
 // exportImgCol
 function exportImgCol(imgCol,str) {

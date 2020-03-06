@@ -11,7 +11,7 @@ var regions = ee.FeatureCollection([
 
 // imgCol 
 var now = ee.Date(Date.now());
-var NDVICollection = ee.ImageCollection('MODIS/006/MOD13Q1')
+var NDVICollection=ee.ImageCollection('MODIS/006/MOD13Q1')
     .filterDate('2010-01-01',now)
     .filterBounds(regions)
     .select('NDVI'); 
@@ -32,18 +32,18 @@ var byMonth = ee.ImageCollection.fromImages(
     }));
 
 var meanNDVI = byMonth.reduce(ee.Reducer.mean());
-var mask     = meanNDVI.gt(0.1);
+var     mask = meanNDVI.gt(0.1);
 
 var taskNdviCol = col.filterDate('2019-11-01',now);
 
-function exportDiffImgCol(imgCol,str){
-    var indexList = imgCol.reduceColumns(ee.Reducer.toList(),['system:index']).get('list');
-    indexList.evaluate(function(indexs){
-        for (var i=0;i<indexs.length;i++){
-            var img0      = imgCol.filter(ee.Filter.eq("system:index", indexs[i])).first().updatMask(mask);
-            var img1      = imgCol.filter(ee.Filter.eq("system:index", indexs[i+1])).first().updatMask(mask);
-            var img       = img1.subtract(img0);
-            var desc_name = img1.get('system:index').getInfo();
+function exportImgCol(imgCol,str) {
+      var indexList = imgCol.reduceColumns(ee.Reducer.toList(), ["system:index"]).get("list");
+      indexList.evaluate(function(indexs) {
+        for (var i=0; i<indexs.length; i++) {
+          var img0      = imgCol.filter(ee.Filter.eq("system:index", indexs[i])).first().updateMask(mask);
+          var img1      = imgCol.filter(ee.Filter.eq("system:index", indexs[i+1])).first().updateMask(mask);
+          var img       = img1.subtract(img0);
+          var desc_name = img1.get('system:index').getInfo();
             Export.image.toDrive({
             image      : img.clip(regions),
             description: str + desc_name,
@@ -53,8 +53,8 @@ function exportDiffImgCol(imgCol,str){
             crs        : "EPSG:4326",
             maxPixels  : 1e13
           });
-        }
-    });
-}
+        }
+      });
+    }
 
-exportDiffImgCol(taskNdviCol,'diff_');
+exportImgCol(taskNdviCol,'NDVIDiff_');
