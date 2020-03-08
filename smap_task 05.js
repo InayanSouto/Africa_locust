@@ -1,5 +1,5 @@
+//1. study area 25w-110E，5S-40N。
 var geometry = 
-// study area 25w-110E，5S-40N。
     ee.Geometry.Polygon(
          [[[-25, 40],
            [-25, -5],
@@ -14,8 +14,8 @@ var now = ee.Date(Date.now());
 var SMAPCollection = ee.ImageCollection("NASA_USDA/HSL/SMAP_soil_moisture")
     .filterDate('2015-04-01',now).select('ssm');
 
+// history mean per month
 var months = ee.List.sequence(1,12);
-
 var byMonth = ee.ImageCollection.fromImages(
     months.map(function (m) {
         return SMAPCollection.filter(ee.Filter.calendarRange(m, m, 'month'))
@@ -23,64 +23,66 @@ var byMonth = ee.ImageCollection.fromImages(
                 .set('month', m);
 }));
 
+//2. Set month and year
+var year_month = [];
+for (var y = 2018; y <= 2020; y++){
+  for (var m = 1; m < 13; m++){
+    year_month.push([y,m]);
+  }
+}
 
-var smapCol_18 = ee.ImageCollection.fromImages(
-    months.map(function (m) {
-        return SMAPCollection
-            .filterDate('2018-01-01', '2019-01-01')
-            .filter(ee.Filter.calendarRange(m, m, 'month'))
-            .select('ssm').mean()
-            .set('month', m);
-}));
+var conditional = function(image) {
+  return ee.Algorithms.If(ee.Number(image.bandNames().length()).gt(0),
+                          image.set('month',image.get('month')).set('year',image.get('year')),
+                          null);
+};
 
-var smapCol_19 = ee.ImageCollection.fromImages(
-    months.map(function (m) {
-        return SMAPCollection
-            .filterDate('2019-01-01', '2020-01-01')
-            .filter(ee.Filter.calendarRange(m, m, 'month'))
-            .select('ssm').mean()
-            .set('month', m);
-}));
+var byAll = ee.ImageCollection.fromImages(
+    year_month.map(function(ym){
+      var y = ym[0];
+      var m = ym[1];
+      var image_ym = SMAPCollection.filter(ee.Filter.calendarRange(y, y, 'year'))
+        .filter(ee.Filter.calendarRange(m, m, 'month'))
+        .mean()
+        .set('year',y)
+        .set('month',m);
+      var result = conditional(image_ym);
+      return result;
+      })
+    );
 
-var smapCol_20 = ee.ImageCollection.fromImages(
-    months.map(function (m) {
-        return SMAPCollection
-            .filterDate('2020-01-01', now)
-            .filter(ee.Filter.calendarRange(m, m, 'month'))
-            .select('ssm').mean()
-            .set('month', m);
-}));
+print(byAll);
 
 var calJuping = function(image) {
     var m = image.get('month');
+    var y = image.get('year');
     var imgByMonth = byMonth.filter(ee.Filter.eq("month",m)).first();
-    return image.subtract(imgByMonth).set('month', m);
+    return image.subtract(imgByMonth).set('month', m).set('year', y);
 };
 
 var calJupingPer = function(image) {
     var m = image.get('month');
+    var y = image.get('year');
+
     var imgByMonth = byMonth.filter(ee.Filter.eq("month",m)).first();
-    return image.subtract(imgByMonth).divide(imgByMonth).set('month', m);  
+    return image.subtract(imgByMonth).divide(imgByMonth).set('month', m).set('year', y);  
 };
 
-var juping_18 = smapCol_18.map(calJuping);
-var juping_19 = smapCol_19.map(calJuping);
-var juping_20 = smapCol_20.map(calJuping);
-var jupingPer_18 =smapCol_18.map(calJupingPer);
-var jupingPer_19 =smapCol_19.map(calJupingPer);
-var jupingPer_20 =smapCol_20.map(calJupingPer);
+var juping = byAll.map(calJuping);
+var jupingPer = byAll.map(calJupingPer);
 
-print(jupingPer_18);
-Map.addLayer(juping_18);
-Map.addLayer(jupingPer_18);
-// exportImgCol
+print(jupingPer);
+Map.addLayer(juping);
+Map.addLayer(jupingPer);
+
+//3. exportImgCol
 function exportImgCol(imgCol,str) {
       var indexList = imgCol.reduceColumns(ee.Reducer.toList(), ["system:index"])
                             .get("list");
       indexList.evaluate(function(indexs) {
         for (var i=0; i<indexs.length; i++) {
           var image = imgCol.filter(ee.Filter.eq("system:index", indexs[i])).first();
-            var desc_name = image.get('month').getInfo();
+            var desc_name = image.get('year').getInfo()+'_'+image.get('month').getInfo();
             Export.image.toDrive({
             image: image.clip(regions),
             description: str + desc_name,
@@ -94,12 +96,8 @@ function exportImgCol(imgCol,str) {
       });
     }
 
-exportImgCol(juping_18,'juping_18_');
-exportImgCol(juping_19,'juping_19_');
-exportImgCol(juping_20,'juping_20_');
-exportImgCol(jupingPer_18,'jupingPer_18_');
-exportImgCol(jupingPer_19,'jupingPer_19_');
-exportImgCol(jupingPer_20,'jupingPer_20_');
+exportImgCol(juping,'juping_');
+exportImgCol(jupingPer,'jupingPer_');
 
 
 
