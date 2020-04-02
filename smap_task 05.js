@@ -54,7 +54,6 @@ var byAll = ee.ImageCollection.fromImages(
       })
     );
 
-print(byAll);
 
 var calJuping = function(image) {
     var m = image.get('month');
@@ -74,6 +73,8 @@ var calJupingPer = function(image) {
 var juping = byAll.map(calJuping);
 var jupingPer = byAll.map(calJupingPer);
 
+print(juping)
+
 //3. exportImgCol
 function exportImgCol(imgCol,str) {
       var indexList = imgCol.reduceColumns(ee.Reducer.toList(), ["system:index"])
@@ -81,7 +82,7 @@ function exportImgCol(imgCol,str) {
       indexList.evaluate(function(indexs) {
         for (var i=0; i<indexs.length; i++) {
           var image = imgCol.filter(ee.Filter.eq("system:index", indexs[i])).first();
-            var desc_name = image.get('year').getInfo()+'_'+image.get('month').getInfo();
+            var desc_name = image.get("year").getInfo()+'_'+image.get("month").getInfo();
             Export.image.toDrive({
             image: image.clip(regions),
             description: str + desc_name,
@@ -96,7 +97,7 @@ function exportImgCol(imgCol,str) {
     }
 
 exportImgCol(juping,'juping_');
-// exportImgCol(jupingPer,'jupingPer_');
+exportImgCol(jupingPer,'jupingPer_');
 
 
 
