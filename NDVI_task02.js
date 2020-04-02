@@ -23,7 +23,6 @@ var col = NDVICollection.map(function(img){
 
 // grouped by month 
 var months = ee.List([11,12,1,2]);
-
 var byMonth = ee.ImageCollection.fromImages(
     months.map(function (m) {
         return col.filterDate('2019-11-01',now).filter(ee.Filter.calendarRange(m, m, 'month'))
@@ -45,8 +44,7 @@ var ndviChange_2 = img12.subtract(img1).set('name','ndviChange_2');
 var ndviChange = ee.ImageCollection([ndviChange_12,ndviChange_1,ndviChange_2]);
 
 Map.centerObject(regions);
-Map.addLayer(byMonth);
-Map.addLayer(ndviChange);
+Map.addLayer(regions,{},'Study Area');
 
 // exportImgCol
 function exportImgCol(imgCol,str) {

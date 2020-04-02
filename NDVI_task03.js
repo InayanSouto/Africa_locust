@@ -9,6 +9,8 @@ var regions = ee.FeatureCollection([
     ee.Feature(geometry)
   ]);
 
+Map.addLayer(regions,{},'Study Area');
+Map.centerObject(regions,2);
 // imgCol 
 var now = ee.Date(Date.now());
 var NDVICollection=ee.ImageCollection('MODIS/006/MOD13Q1')

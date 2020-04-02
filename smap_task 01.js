@@ -9,6 +9,8 @@ var regions = ee.FeatureCollection([
     ee.Feature(geometry)
   ]);
 
+Map.addLayer(regions);
+Map.centerObject(regions, 2);
 // imgCol
 var now = ee.Date(Date.now());
 var SMAPCollection = ee.ImageCollection("NASA_USDA/HSL/SMAP_soil_moisture")

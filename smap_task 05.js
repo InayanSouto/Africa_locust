@@ -9,6 +9,9 @@ var regions = ee.FeatureCollection([
     ee.Feature(geometry)
   ]);
 
+Map.addLayer(regions,{},'Study Area');
+Map.centerObject(regions,2);
+
 // imgCol
 var now = ee.Date(Date.now());
 var SMAPCollection = ee.ImageCollection("NASA_USDA/HSL/SMAP_soil_moisture")
@@ -71,10 +74,6 @@ var calJupingPer = function(image) {
 var juping = byAll.map(calJuping);
 var jupingPer = byAll.map(calJupingPer);
 
-print(jupingPer);
-Map.addLayer(juping);
-Map.addLayer(jupingPer);
-
 //3. exportImgCol
 function exportImgCol(imgCol,str) {
       var indexList = imgCol.reduceColumns(ee.Reducer.toList(), ["system:index"])
@@ -97,7 +96,7 @@ function exportImgCol(imgCol,str) {
     }
 
 exportImgCol(juping,'juping_');
-exportImgCol(jupingPer,'jupingPer_');
+// exportImgCol(jupingPer,'jupingPer_');
 
 
 
